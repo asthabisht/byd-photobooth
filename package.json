@@ -1,0 +1,11 @@
+{
+  "name": "byd-ti7-photobooth",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "BYD Ti 7 x Al-Futtaim photobooth — Netlify Functions (Bria-via-Replicate cut-out + R2 upload)",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "replicate": "^1.0.1"
+  }
+}
