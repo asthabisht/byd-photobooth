@@ -1,11 +1,10 @@
 {
-  "name": "byd-ti7-photobooth",
+  "name": "hollister-hangouts-photobooth",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "BYD Ti 7 x Al-Futtaim photobooth — Netlify Functions (Bria-via-Replicate cut-out + R2 upload)",
+  "description": "Hollister Hangouts event photobooth — Netlify Function uploads each photo to Cloudflare R2; the returned URL drives the QR.",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.600.0",
-    "replicate": "^1.0.1"
+    "@aws-sdk/client-s3": "^3.600.0"
   }
 }

@@ -5,8 +5,8 @@
 [functions]
   node_bundler = "esbuild"
 
-# Serve the booth at the site root (so the kiosk just opens https://<site>/ ).
+# Serve the booth at the site root (kiosk just opens https://<site>/ ).
 [[redirects]]
   from = "/"
-  to = "/byd_ti7_photobooth.html"
+  to = "/anf_photobooth.html"
   status = 200
