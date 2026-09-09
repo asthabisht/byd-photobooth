@@ -122,14 +122,12 @@ Minimum version required to store current data is: `+i+`.
   /* ---- PRINT: composite the photo into the navy polaroid frame, borderless 4x6 ---- */
   .print-only{display:none}
   @media print{
-    @page{size:4in 6in;margin:0}
+    @page{size:4in 6in}   /* 4x6 with DEFAULT margins — margin:0/None jams this printer */
     html,body{height:auto;background:#fff;display:block;overflow:visible}
     .stage,.print-overlay{display:none!important}
-    .print-only{display:block;position:relative;width:4in;height:6in;overflow:hidden;
-      background:#2C3A48;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    /* single flattened polaroid, small ~1.5mm bleed so navy runs past the cut without
-       cropping the wordmark */
-    .print-only img{position:absolute;top:-0.06in;left:-0.06in;width:4.12in;height:6.12in;display:block}
+    .print-only{display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    /* subtle offset to counter the printer's consistent shift (tweak top/left mm if needed) */
+    .print-only img{display:block;width:100%;height:auto;position:relative;top:-2mm;left:2mm}
   }
 </style>
 
