@@ -125,9 +125,9 @@ Minimum version required to store current data is: `+i+`.
     @page{size:4in 6in}   /* 4x6 with DEFAULT margins — margin:0/None jams this printer */
     html,body{height:auto;background:#fff;display:block;overflow:visible}
     .stage,.print-overlay{display:none!important}
-    .print-only{display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    /* subtle offset to counter the printer's consistent shift (tweak top/left mm if needed) */
-    .print-only img{display:block;width:100%;height:auto;position:relative;top:-2mm;left:2mm}
+    .print-only{display:block;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    /* fill the 4x6 page, centered */
+    .print-only img{display:block;width:100%;height:auto;margin:0 auto}
   }
 </style>
 
@@ -277,10 +277,9 @@ Minimum version required to store current data is: `+i+`.
       var ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
       var photo=new Image();
       photo.onload=function(){
-        var L=0.05*W, T=0.0328*H, PW=0.90*W, PH=0.886*H;                 // photo window rect
-        var s=Math.max(PW/photo.width, PH/photo.height), dw=photo.width*s, dh=photo.height*s;
-        ctx.save(); ctx.beginPath(); ctx.rect(L,T,PW,PH); ctx.clip();
-        ctx.drawImage(photo, L+(PW-dw)/2, T+(PH-dh)/2, dw, dh); ctx.restore();
+        // photo fills the WHOLE card (cover); the navy banner overlay sits over the bottom
+        var s=Math.max(W/photo.width, H/photo.height), dw=photo.width*s, dh=photo.height*s;
+        ctx.drawImage(photo, (W-dw)/2, (H-dh)/2, dw, dh);
         function over(){ ctx.drawImage(overlayImg,0,0,W,H); resolve(c.toDataURL("image/jpeg",0.92)); }
         if(overlayImg.complete && overlayImg.naturalWidth){ over(); } else { overlayImg.onload=over; }
       };
