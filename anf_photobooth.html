@@ -127,9 +127,9 @@ Minimum version required to store current data is: `+i+`.
     .stage,.print-overlay{display:none!important}
     .print-only{display:block;position:relative;width:4in;height:6in;overflow:hidden;
       background:#2C3A48;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    /* single flattened polaroid, overscanned ~3mm per side (keeps 2:3) so navy bleeds past the
-       cut even when the dye-sub paper drifts — covers registration shift, no white edge */
-    .print-only img{position:absolute;top:-0.18in;left:-0.12in;width:4.24in;height:6.36in;display:block}
+    /* single flattened polaroid, small ~1.5mm bleed so navy runs past the cut without
+       cropping the wordmark */
+    .print-only img{position:absolute;top:-0.06in;left:-0.06in;width:4.12in;height:6.12in;display:block}
   }
 </style>
 
