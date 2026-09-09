@@ -102,10 +102,7 @@ Minimum version required to store current data is: `+i+`.
 
   /* DONE / PRINT: exact polaroid = photo BEHIND + the real PDF artwork (window punched
      transparent) laid ON TOP. Guarantees pixel-exact match to POLAROID_PRINT.pdf. */
-  .pframe{position:relative;flex:none;aspect-ratio:2/3;margin:0 auto;box-shadow:0 16px 40px rgba(44,58,72,.28)}
-  .pframe .pphoto{position:absolute;left:5%;top:3.28%;width:90%;height:88.6%;object-fit:cover;display:block}
-  .pframe .poverlay{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
-  #s-done .pframe{height:34cqh}
+  .done-photo{height:34cqh;aspect-ratio:2/3;display:block;margin:0 auto;border-radius:2px;box-shadow:0 16px 40px rgba(44,58,72,.28)}
 
   .qrbox{background:#fff;padding:14px;border-radius:8px;width:min(40%,200px);margin:clamp(10px,1.6cqh,18px) auto 0;
     display:flex;align-items:center;justify-content:center;border:1px solid rgba(44,58,72,.14);box-shadow:0 10px 28px rgba(44,58,72,.16)}
@@ -128,8 +125,10 @@ Minimum version required to store current data is: `+i+`.
     @page{size:4in 6in;margin:0}
     html,body{height:auto;background:#fff;display:block;overflow:visible}
     .stage,.print-overlay{display:none!important}
-    .print-only{display:block;width:4in;height:6in;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .print-only .pframe{position:relative;width:4in;height:6in;margin:0;box-shadow:none}
+    .print-only{display:block;position:relative;width:4in;height:6in;overflow:hidden;
+      background:#2C3A48;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    /* single flattened polaroid, overscanned ~1.5mm so the navy bleeds past the cut (no white edge) */
+    .print-only img{position:absolute;top:-0.06in;left:-0.06in;width:4.12in;height:6.12in;display:block}
   }
 </style>
 
@@ -178,10 +177,7 @@ Minimum version required to store current data is: `+i+`.
     <div class="spacer"></div>
     <div class="done-kicker">Your photo is ready</div>
     <div class="done-title">Scan to download</div>
-    <div class="pframe">
-      <img class="pphoto" id="donePreview" alt="">
-      <img class="poverlay" src="assets/polaroid_overlay.png" alt="Abercrombie &amp; Fitch">
-    </div>
+    <img class="done-photo" id="donePreview" alt="Abercrombie &amp; Fitch polaroid">
     <div class="qrbox" id="qrbox"></div>
     <div class="qr-sub" id="qrSub">Point your camera at the code</div>
     <div class="spacer"></div>
@@ -201,12 +197,7 @@ Minimum version required to store current data is: `+i+`.
 </div>
 
 <!-- Full-bleed print target — the navy polaroid with the photo composited in -->
-<div class="print-only" id="printOnly">
-  <div class="pframe">
-    <img class="pphoto" id="printImg" alt="">
-    <img class="poverlay" src="assets/polaroid_overlay.png" alt="">
-  </div>
-</div>
+<div class="print-only" id="printOnly"><img id="printImg" alt=""></div>
 
 <script>
 (function(){
@@ -222,7 +213,9 @@ Minimum version required to store current data is: `+i+`.
 
   var $ = function(id){ return document.getElementById(id); };
   var screens = { begin:$("s-begin"), capture:$("s-capture"), review:$("s-review"), done:$("s-done") };
-  var stream = null, lastJpeg = null, timers = [];
+  var stream = null, lastJpeg = null, framedJpeg = null, timers = [];
+  // preload the polaroid overlay so we can flatten photo+frame into one image
+  var overlayImg = new Image(); overlayImg.src = "assets/polaroid_overlay.png";
 
   function clearTimers(){ timers.forEach(clearTimeout); timers.forEach(clearInterval); timers = []; }
   function after(ms, fn){ var t = setTimeout(fn, ms); timers.push(t); return t; }
@@ -278,14 +271,33 @@ Minimum version required to store current data is: `+i+`.
     }catch(e){ box.innerHTML = '<div style="color:#2C3A48;font-size:12px;padding:8px;text-align:center">'+text+'</div>'; }
   }
 
+  // flatten captured photo + polaroid overlay into ONE image (bulletproof for silent printing)
+  function composePolaroid(){
+    return new Promise(function(resolve){
+      var W=1200, H=1800, c=document.createElement("canvas"); c.width=W; c.height=H;
+      var ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
+      var photo=new Image();
+      photo.onload=function(){
+        var L=0.05*W, T=0.0328*H, PW=0.90*W, PH=0.886*H;                 // photo window rect
+        var s=Math.max(PW/photo.width, PH/photo.height), dw=photo.width*s, dh=photo.height*s;
+        ctx.save(); ctx.beginPath(); ctx.rect(L,T,PW,PH); ctx.clip();
+        ctx.drawImage(photo, L+(PW-dw)/2, T+(PH-dh)/2, dw, dh); ctx.restore();
+        function over(){ ctx.drawImage(overlayImg,0,0,W,H); resolve(c.toDataURL("image/jpeg",0.92)); }
+        if(overlayImg.complete && overlayImg.naturalWidth){ over(); } else { overlayImg.onload=over; }
+      };
+      photo.src=lastJpeg;
+    });
+  }
+
   async function enterDone(){
     stopCam(); go("done");
-    $("donePreview").src = lastJpeg; $("printImg").src = lastJpeg;
-    $("qrSub").textContent = "Preparing your link…";
+    $("qrSub").textContent = "Preparing your photo…";
+    framedJpeg = await composePolaroid();           // one flattened polaroid image
+    $("donePreview").src = framedJpeg; $("printImg").src = framedJpeg;
     renderQR(CONFIG.QR_FALLBACK_URL);
     var url = CONFIG.QR_FALLBACK_URL;
     try{
-      var b64 = lastJpeg.split(",")[1];
+      var b64 = framedJpeg.split(",")[1];
       var res = await fetch(CONFIG.UPLOAD_ENDPOINT, { method:"POST", headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ imageBase64:b64, name:"abercrombie" }) });
       if(res.ok){ var data = await res.json(); if(data && data.url) url = data.url; }
@@ -294,14 +306,19 @@ Minimum version required to store current data is: `+i+`.
     $("qrSub").textContent = "Point your camera at the code";
   }
 
-  function printPhoto(){
+  // wait until the print image is fully decoded, THEN print — fixes kiosk-printing racing ahead
+  async function printPhoto(){
+    if(!framedJpeg) return;                          // nothing to print until a photo exists
     $("printOverlay").classList.add("active");
-    after(120, function(){ try{ window.print(); }catch(e){} });
+    var img = $("printImg");
+    try{ if(img && img.decode){ await img.decode(); } }catch(e){}
+    // two frames to guarantee it's painted, then fire the silent print
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ try{ window.print(); }catch(e){} }); });
     after(CONFIG.PRINT_SECONDS*1000, resetHome);
   }
 
   function resetHome(){
-    clearTimers(); stopCam(); lastJpeg = null;
+    clearTimers(); stopCam(); lastJpeg = null; framedJpeg = null;
     $("printOverlay").classList.remove("active");
     $("reviewImg").removeAttribute("src"); $("donePreview").removeAttribute("src"); $("printImg").removeAttribute("src");
     $("qrbox").innerHTML = ""; $("capHint").textContent = "";
